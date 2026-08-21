@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>YouTube 推广数据看板</title>
+<style>
+  :root {
+    --navy: #1F2A44;
+    --green: #2E7D32;
+    --red: #C0392B;
+    --grey: #6B7280;
+    --border: #E5E7EB;
+    --track: #EEF0F4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 16px 80px;
+    background: #F5F6F8;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    color: #1A1A1A;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  h1 { font-size: 22px; color: var(--navy); margin: 0 0 2px; }
+  .subtitle { color: var(--grey); font-size: 13px; margin: 0 0 24px; }
+
+  .section-title {
+    font-size: 16px; font-weight: 700; color: var(--navy);
+    margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+
+  .metric-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px; margin-bottom: 16px;
+  }
+  .metric-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; min-width: 0;
+  }
+  .metric-label { font-size: 11.5px; color: var(--grey); margin-bottom: 4px; }
+  .metric-value { font-size: 19px; font-weight: 700; color: var(--navy); overflow-wrap: break-word; }
+
+  .chart-grid {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px;
+  }
+  .chart-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; min-width: 0;
+  }
+  .chart-title { font-size: 11.5px; color: var(--grey); margin-bottom: 10px; }
+  .bar-row { margin-bottom: 8px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-row-label {
+    font-size: 10.5px; color: var(--grey); margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bar-track { width: 100%; height: 7px; background: var(--track); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; min-width: 2px; }
+  .bar-row-value { font-size: 10.5px; font-weight: 600; color: #1A1A1A; margin-top: 2px; }
+  .chart-empty { font-size: 11.5px; color: var(--grey); padding: 6px 0; }
+
+  .round-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 18px; overflow: hidden;
+  }
+  .round-card.ended { opacity: 0.92; }
+  .round-head {
+    display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+    background: var(--navy); flex-wrap: wrap;
+  }
+  .round-head input {
+    background: transparent; border: none; color: #fff; font-weight: 700; font-size: 14px;
+    outline: none; padding: 4px 6px; border-radius: 4px;
+  }
+  .round-head input:hover, .round-head input:focus { background: rgba(255,255,255,0.12); }
+  .round-head input.rname { width: 200px; }
+  .round-head input.rdate { width: 170px; font-weight: 400; font-size: 12.5px; color: #D6DAE3; }
+  .round-head .spacer { flex: 1; }
+  .badge-ended {
+    background: rgba(255,255,255,0.15); color: #D6DAE3; font-size: 11px;
+    padding: 3px 9px; border-radius: 20px; font-weight: 600;
+  }
+  .icon-btn {
+    background: transparent; border: 1px solid rgba(255,255,255,0.35); color: #fff;
+    border-radius: 6px; padding: 4px 9px; font-size: 12px; cursor: pointer;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.15); }
+
+  .round-body-pad { padding: 12px 16px 0; }
+
+  .budget-box { margin-bottom: 14px; }
+  .budget-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px; color: var(--grey); margin-bottom: 5px;
+  }
+  .budget-row b { color: #1A1A1A; font-size: 12.5px; }
+  .budget-track { width: 100%; height: 9px; background: var(--track); border-radius: 5px; overflow: hidden; }
+  .budget-fill { height: 100%; border-radius: 5px; }
+  .round-head input.rbudget {
+    width: 90px; font-weight: 400; font-size: 12.5px; color: #D6DAE3;
+  }
+  .round-head .budget-label { color: #A8AEBB; font-size: 11.5px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+  thead th {
+    text-align: left; padding: 8px 6px; background: #FAFBFC; color: var(--grey);
+    font-weight: 600; border-bottom: 1px solid var(--border);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  tbody td { padding: 5px 5px; border-bottom: 1px solid #F0F1F3; overflow: hidden; }
+  tbody tr:hover { background: #FAFBFC; }
+  td input[type=text], td input[type=number], td input[type=date] {
+    width: 100%; border: 1px solid transparent; border-radius: 5px;
+    padding: 4px 5px; font-size: 12px; background: transparent; font-family: inherit;
+  }
+  td input:hover { border-color: var(--border); }
+  td input:focus { outline: none; border-color: var(--navy); background: #fff; }
+  td.computed { color: var(--grey); font-size: 11.5px; }
+  td.computed.flag { color: var(--red); font-weight: 600; }
+  .del-row-btn {
+    background: none; border: none; color: #C4C7CD; cursor: pointer; font-size: 15px;
+    padding: 2px 4px; line-height: 1;
+  }
+  .del-row-btn:hover { color: var(--red); }
+  .table-scroll { overflow-x: auto; }
+  .table-scroll table { min-width: 980px; }
+
+  tfoot td {
+    padding: 8px 5px; font-weight: 700; background: #FAFBFC; border-top: 1.5px solid var(--border);
+    font-size: 11.5px;
+  }
+
+  .round-foot { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px 12px; }
+  .add-row-btn {
+    background: none; border: 1px dashed var(--border); color: var(--grey);
+    border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+  }
+  .add-row-btn:hover { border-color: var(--navy); color: var(--navy); }
+
+  .add-round-btn {
+    width: 100%; padding: 12px; border: 1.5px dashed var(--border); border-radius: 10px;
+    background: #fff; color: var(--grey); font-size: 13px; cursor: pointer; margin-top: 4px;
+  }
+  .add-round-btn:hover { border-color: var(--navy); color: var(--navy); }
+
+  .save-status { font-size: 11.5px; color: var(--grey); text-align: right; margin-top: 6px; height: 14px; }
+  .footer-actions { text-align: center; margin-top: 28px; }
+  .reset-btn { background: none; border: none; color: #C4C7CD; font-size: 11.5px; cursor: pointer; text-decoration: underline; }
+  .reset-btn:hover { color: var(--red); }
+
+  @media (max-width: 640px) {
+    .chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>YouTube 推广数据看板</h1>
+  <p class="subtitle">手动录入每轮投放的原始数据，其余指标自动计算</p>
+
+  <div class="section-title">全局汇总</div>
+  <div id="global-metrics" class="metric-grid"></div>
+  <div id="global-charts" class="chart-grid"></div>
+
+  <div class="section-title">分轮明细</div>
+  <div id="rounds-container"></div>
+  <button class="add-round-btn" id="add-round-btn">+ 新建一轮投放</button>
+
+  <div class="save-status" id="save-status">&nbsp;</div>
+  <div class="footer-actions"><button class="reset-btn" id="reset-btn">清空全部数据</button></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'data';
+
+const SEED = {
+  rounds: [
+    {
+      id: 'r1', name: '7月 第一轮', dateRange: 'Jul 2 - Jul 17', ended: true, budget: 500,
+      videos: [
+        { id: 'v1', date: '2026-07-02', name: 'How Does Spread Work in Brokers?', impressions: 38990, views: 2211, cost: 188.91, subs: 215, followon: 33 },
+        { id: 'v2', date: '2026-07-02', name: "Builder.ai's Collapse", impressions: 674890, views: 36798, cost: 219.67, subs: 9191, followon: 360 },
+        { id: 'v3', date: '2026-07-03', name: 'Understanding Global Capital Flows', impressions: 524616, views: 35951, cost: 191.13, subs: 7783, followon: 586 },
+      ]
+    },
+    {
+      id: 'r2', name: '8月 第一轮', dateRange: 'Aug 1 - Aug 15', ended: true, budget: 300,
+      videos: [
+        { id: 'v4', date: '2026-08-01', name: 'Staring at the charts all day?', impressions: 0, views: 0, cost: 0, subs: 0, followon: 0 },
+        { id: 'v5', date: '2026-08-01', name: 'What Is a Risk-Off Market?', impressions: 499, views: 22, cost: 1.64, subs: 6, followon: 1 },
+        { id: 'v6', date: '2026-08-01', name: 'How to Use Moving Averages the Right Way', impressions: 324551, views: 16273, cost: 99.83, subs: 4319, followon: 155 },
+        { id: 'v7', date: '2026-08-03', name: 'AI, Cloud & Big Tech Are Booming', impressions: 345312, views: 15812, cost: 99.81, subs: 4071, followon: 71 },
+        { id: 'v8', date: '2026-08-04', name: 'Quantitative Investing with AI', impressions: 0, views: 0, cost: 0, subs: 0, followon: 0 },
+        { id: 'v9', date: '2026-08-05', name: 'Professional traders rely on process', impressions: 276531, views: 14055, cost: 98.16, subs: 4095, followon: 234 },
+      ]
+    },
+    {
+      id: 'r3', name: '8月 第二轮', dateRange: 'Aug 16 -', ended: false, budget: 200,
+      videos: [
+        { id: 'v10', date: '2026-08-16', name: 'Why Markets Move Before News', impressions: 93398, views: 4635, cost: 26.04, subs: 1074, followon: 36 },
+        { id: 'v11', date: '2026-08-16', name: 'Why do the best investors seem so boring?', impressions: 80471, views: 4388, cost: 26.24, subs: 1079, followon: 51 },
+      ]
+    }
+  ]
+};
+
+let state = null;
+let uidCounter = 1;
+function uid() { return 'x' + (uidCounter++) + '_' + Date.now().toString(36); }
+
+function fmtInt(n) { return Math.round(n).toLocaleString('en-US'); }
+function fmtMoney(n) { return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 }); }
+function fmtPct(n) { return (n * 100).toFixed(2) + '%'; }
+function shortLabel(s, n) { s = s || '(未命名)'; return s.length > n ? s.slice(0, n) + '…' : s; }
+
+function computeRow(v) {
+  const viewRate = v.impressions > 0 ? v.views / v.impressions : null;
+  const cpv = v.views > 0 ? v.cost / v.views : null;
+  const subConv = v.views > 0 ? v.subs / v.views : null;
+  const costPerSub = v.subs > 0 ? v.cost / v.subs : null;
+  const followonRate = v.views > 0 ? v.followon / v.views : null;
+  return { viewRate, cpv, subConv, costPerSub, followonRate };
+}
+
+function sumVideos(videos) {
+  const s = { impressions: 0, views: 0, cost: 0, subs: 0, followon: 0 };
+  videos.forEach(v => {
+    s.impressions += Number(v.impressions) || 0;
+    s.views += Number(v.views) || 0;
+    s.cost += Number(v.cost) || 0;
+    s.subs += Number(v.subs) || 0;
+    s.followon += Number(v.followon) || 0;
+  });
+  return s;
+}
+
+// Dependency-free bar chart: renders label / track+fill / value rows inside a container.
+function renderBarChart(containerId, items, color, formatter) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const max = Math.max(0, ...items.map(i => i.value));
+  if (items.length === 0) {
+    el.innerHTML = '<div class="chart-empty">暂无数据</div>';
+    return;
+  }
+  el.innerHTML = items.map(i => {
+    const pct = max > 0 ? Math.max((i.value / max) * 100, i.value > 0 ? 2 : 0) : 0;
+    return `
+      <div class="bar-row">
+        <div class="bar-row-label" title="${escapeAttr(i.label)}">${escapeAttr(i.label)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="bar-row-value">${formatter(i.value)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAllCharts(prefix, items) {
+  renderBarChart(`${prefix}-cost`, items.map(i => ({ label: i.label, value: i.cost })), '#1F2A44', fmtMoney);
+  renderBarChart(`${prefix}-subs`, items.map(i => ({ label: i.label, value: i.subs })), '#2E7D32', fmtInt);
+  renderBarChart(`${prefix}-cpv`, items.map(i => ({ label: i.label, value: i.cpv })), '#B8860B', fmtMoney);
+  renderBarChart(`${prefix}-costsub`, items.map(i => ({ label: i.label, value: i.costPerSub })), '#C0392B', fmtMoney);
+}
+
+function budgetBarHTML(budget, spend) {
+  const b = Number(budget) || 0;
+  const s = Number(spend) || 0;
+  const pct = b > 0 ? (s / b) * 100 : 0;
+  const over = s > b;
+  const barPct = Math.min(pct, 100);
+  const color = over ? '#C0392B' : '#2E7D32';
+  const pctLabel = b > 0 ? pct.toFixed(0) + '%' : '—';
+  const overNote = over ? `　超支 ${fmtMoney(s - b)}` : '';
+  return `
+    <div class="budget-row">
+      <span>预算使用</span>
+      <span><b>${fmtMoney(s)}</b> / ${fmtMoney(b)}　${pctLabel}${overNote}</span>
+    </div>
+    <div class="budget-track"><div class="budget-fill" style="width:${barPct}%;background:${color}"></div></div>
+  `;
+}
+
+function chartGridHTML(prefix) {
+  return `
+    <div class="chart-card"><div class="chart-title">花费 ($)</div><div id="${prefix}-cost"></div></div>
+    <div class="chart-card"><div class="chart-title">订阅</div><div id="${prefix}-subs"></div></div>
+    <div class="chart-card"><div class="chart-title">CPV ($)</div><div id="${prefix}-cpv"></div></div>
+    <div class="chart-card"><div class="chart-title">每订阅成本 ($)</div><div id="${prefix}-costsub"></div></div>
+  `;
+}
+
+function render() {
+  renderGlobal();
+  renderRounds();
+}
+
+function renderGlobal() {
+  const allVideos = state.rounds.flatMap(r => r.videos);
+  const s = sumVideos(allVideos);
+  const c = computeRow(s);
+  const el = document.getElementById('global-metrics');
+  const totalBudget = state.rounds.reduce((sum, r) => sum + (Number(r.budget) || 0), 0);
+  const usagePct = totalBudget > 0 ? (s.cost / totalBudget) * 100 : null;
+  const cards = [
+    ['投放轮数', state.rounds.length + ' 轮'],
+    ['视频总数', allVideos.length + ' 条'],
+    ['累计预算', fmtMoney(totalBudget)],
+    ['累计花费', fmtMoney(s.cost) + (usagePct !== null ? (usagePct > 100 ? ' (超支)' : '') : '')],
+    ['累计展示', fmtInt(s.impressions)],
+    ['累计观看', fmtInt(s.views)],
+    ['累计订阅', fmtInt(s.subs)],
+    ['平均观看率', c.viewRate !== null ? fmtPct(c.viewRate) : '—'],
+    ['平均CPV', c.cpv !== null ? fmtMoney(c.cpv) : '—'],
+    ['订阅转化率', c.subConv !== null ? fmtPct(c.subConv) : '—'],
+    ['每订阅成本', c.costPerSub !== null ? fmtMoney(c.costPerSub) : '—'],
+    ['Follow-on率', c.followonRate !== null ? fmtPct(c.followonRate) : '—'],
+  ];
+  el.innerHTML = cards.map(([label, val]) => `
+    <div class="metric-card">
+      <div class="metric-label">${label}</div>
+      <div class="metric-value">${val}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('global-charts').innerHTML = chartGridHTML('gc');
+  const items = state.rounds.map(r => {
+    const rs = sumVideos(r.videos);
+    const rc = computeRow(rs);
+    return { label: shortLabel(r.name, 10), cost: rs.cost, subs: rs.subs, cpv: rc.cpv || 0, costPerSub: rc.costPerSub || 0 };
+  });
+  renderAllCharts('gc', items);
+}
+
+function renderRounds() {
+  const container = document.getElementById('rounds-container');
+  container.innerHTML = '';
+  state.rounds.forEach(round => {
+    const s = sumVideos(round.videos);
+    const c = computeRow(s);
+    const prefix = `rc-${round.id}`;
+    const card = document.createElement('div');
+    card.className = 'round-card' + (round.ended ? ' ended' : '');
+    card.innerHTML = `
+      <div class="round-head">
+        <input class="rname" data-round="${round.id}" data-field="name" value="${escapeAttr(round.name)}" />
+        <input class="rdate" data-round="${round.id}" data-field="dateRange" value="${escapeAttr(round.dateRange)}" placeholder="日期范围" />
+        <span class="budget-label">预算 $</span>
+        <input class="rbudget" type="number" step="0.01" data-round="${round.id}" data-field="budget" value="${round.budget ?? ''}" placeholder="0" />
+        ${round.ended ? '<span class="badge-ended">已结束</span>' : ''}
+        <div class="spacer"></div>
+        <button class="icon-btn" data-action="toggle-end" data-round="${round.id}">${round.ended ? '重新开放' : '结束本轮'}</button>
+        <button class="icon-btn" data-action="del-round" data-round="${round.id}">删除本轮</button>
+      </div>
+      <div class="round-body-pad">
+        <div class="budget-box" id="budget-${round.id}">${budgetBarHTML(round.budget, s.cost)}</div>
+        <div class="chart-grid">${chartGridHTML(prefix)}</div>
+      </div>
+      <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:24px"></th>
+            <th style="width:90px">日期</th>
+            <th>视频</th>
+            <th style="width:75px">展示</th>
+            <th style="width:65px">观看</th>
+            <th style="width:70px">花费($)</th>
+            <th style="width:60px">订阅</th>
+            <th style="width:75px">Follow-on</th>
+            <th style="width:65px">观看率</th>
+            <th style="width:65px">CPV($)</th>
+            <th style="width:70px">订阅转化率</th>
+            <th style="width:80px">每订阅成本($)</th>
+            <th style="width:70px">Follow-on率</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${round.videos.map(v => rowHTML(round.id, v)).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">本轮汇总</td>
+            <td>${fmtInt(s.impressions)}</td>
+            <td>${fmtInt(s.views)}</td>
+            <td>${fmtMoney(s.cost)}</td>
+            <td>${fmtInt(s.subs)}</td>
+            <td>${fmtInt(s.followon)}</td>
+            <td>${c.viewRate !== null ? fmtPct(c.viewRate) : '—'}</td>
+            <td>${c.cpv !== null ? fmtMoney(c.cpv) : '—'}</td>
+            <td>${c.subConv !== null ? fmtPct(c.subConv) : '—'}</td>
+            <td>${c.costPerSub !== null ? fmtMoney(c.costPerSub) : '—'}</td>
+            <td>${c.followonRate !== null ? fmtPct(c.followonRate) : '—'}</td>
+          </tr>
+        </tfoot>
+      </table>
+      </div>
+      <div class="round-foot">
+        ${round.ended ? '<span></span>' : `<button class="add-row-btn" data-action="add-video" data-round="${round.id}">+ 添加视频</button>`}
+      </div>
+    `;
+    container.appendChild(card);
+
+    const items = round.videos.map(v => {
+      const vc = computeRow(v);
+      return { label: shortLabel(v.name, 10), cost: Number(v.cost) || 0, subs: Number(v.subs) || 0, cpv: vc.cpv || 0, costPerSub: vc.costPerSub || 0 };
+    });
+    renderAllCharts(prefix, items);
+  });
+}
+
+function rowHTML(roundId, v) {
+  const c = computeRow(v);
+  const lowView = c.viewRate !== null && c.viewRate < 0.05;
+  return `
+    <tr data-video="${v.id}" data-round="${roundId}">
+      <td><button class="del-row-btn" data-action="del-video" data-round="${roundId}" data-video="${v.id}">&times;</button></td>
+      <td><input type="date" value="${v.date || ''}" data-field="date" /></td>
+      <td><input type="text" class="video-name" value="${escapeAttr(v.name || '')}" data-field="name" placeholder="视频标题" /></td>
+      <td><input type="number" value="${v.impressions ?? ''}" data-field="impressions" /></td>
+      <td><input type="number" value="${v.views ?? ''}" data-field="views" /></td>
+      <td><input type="number" step="0.01" value="${v.cost ?? ''}" data-field="cost" /></td>
+      <td><input type="number" value="${v.subs ?? ''}" data-field="subs" /></td>
+      <td><input type="number" value="${v.followon ?? ''}" data-field="followon" /></td>
+      <td class="computed${lowView ? ' flag' : ''}">${c.viewRate !== null ? fmtPct(c.viewRate) : '—'}</td>
+      <td class="computed">${c.cpv !== null ? fmtMoney(c.cpv) : '—'}</td>
+      <td class="computed">${c.subConv !== null ? fmtPct(c.subConv) : '—'}</td>
+      <td class="computed">${c.costPerSub !== null ? fmtMoney(c.costPerSub) : '—'}</td>
+      <td class="computed">${c.followonRate !== null ? fmtPct(c.followonRate) : '—'}</td>
+    </tr>
+  `;
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function findVideo(roundId, videoId) {
+  const round = state.rounds.find(r => r.id === roundId);
+  if (!round) return null;
+  return round.videos.find(v => v.id === videoId);
+}
+
+async function persist() {
+  const statusEl = document.getElementById('save-status');
+  statusEl.textContent = '保存中…';
+  try {
+    const result = await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+    if (!result) throw new Error('save failed');
+    statusEl.textContent = '已保存 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  } catch (e) {
+    statusEl.textContent = '保存失败，请重试';
+  }
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(persist, 500);
+}
+
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  const field = t.dataset.field;
+  if (!field) return;
+
+  const roundEl = t.closest('[data-round]');
+  const roundId = t.dataset.round || (roundEl && roundEl.dataset.round);
+  const videoRow = t.closest('tr[data-video]');
+
+  if (videoRow) {
+    const videoId = videoRow.dataset.video;
+    const v = findVideo(roundId, videoId);
+    if (!v) return;
+    if (['impressions','views','cost','subs','followon'].includes(field)) {
+      v[field] = t.value === '' ? 0 : Number(t.value);
+    } else {
+      v[field] = t.value;
+    }
+    const cells = videoRow.querySelectorAll('td.computed');
+    const c = computeRow(v);
+    cells[0].textContent = c.viewRate !== null ? fmtPct(c.viewRate) : '—';
+    cells[0].classList.toggle('flag', c.viewRate !== null && c.viewRate < 0.05);
+    cells[1].textContent = c.cpv !== null ? fmtMoney(c.cpv) : '—';
+    cells[2].textContent = c.subConv !== null ? fmtPct(c.subConv) : '—';
+    cells[3].textContent = c.costPerSub !== null ? fmtMoney(c.costPerSub) : '—';
+    cells[4].textContent = c.followonRate !== null ? fmtPct(c.followonRate) : '—';
+    updateRoundFooterChartsAndGlobal(roundId);
+  } else if (roundId && (field === 'name' || field === 'dateRange')) {
+    const round = state.rounds.find(r => r.id === roundId);
+    if (round) round[field] = t.value;
+  } else if (roundId && field === 'budget') {
+    const round = state.rounds.find(r => r.id === roundId);
+    if (round) {
+      round.budget = t.value === '' ? 0 : Number(t.value);
+      const s = sumVideos(round.videos);
+      const box = document.getElementById(`budget-${roundId}`);
+      if (box) box.innerHTML = budgetBarHTML(round.budget, s.cost);
+      renderGlobal();
+    }
+  }
+  scheduleSave();
+});
+
+function updateRoundFooterChartsAndGlobal(roundId) {
+  const round = state.rounds.find(r => r.id === roundId);
+  if (!round) return;
+  const s = sumVideos(round.videos);
+  const c = computeRow(s);
+  const card = document.querySelector(`.round-head input[data-round="${roundId}"]`).closest('.round-card');
+  const tfootCells = card.querySelectorAll('tfoot td');
+  tfootCells[1].textContent = fmtInt(s.impressions);
+  tfootCells[2].textContent = fmtInt(s.views);
+  tfootCells[3].textContent = fmtMoney(s.cost);
+  tfootCells[4].textContent = fmtInt(s.subs);
+  tfootCells[5].textContent = fmtInt(s.followon);
+  tfootCells[6].textContent = c.viewRate !== null ? fmtPct(c.viewRate) : '—';
+  tfootCells[7].textContent = c.cpv !== null ? fmtMoney(c.cpv) : '—';
+  tfootCells[8].textContent = c.subConv !== null ? fmtPct(c.subConv) : '—';
+  tfootCells[9].textContent = c.costPerSub !== null ? fmtMoney(c.costPerSub) : '—';
+  tfootCells[10].textContent = c.followonRate !== null ? fmtPct(c.followonRate) : '—';
+
+  const items = round.videos.map(v => {
+    const vc = computeRow(v);
+    return { label: shortLabel(v.name, 10), cost: Number(v.cost) || 0, subs: Number(v.subs) || 0, cpv: vc.cpv || 0, costPerSub: vc.costPerSub || 0 };
+  });
+  renderAllCharts(`rc-${round.id}`, items);
+
+  const box = document.getElementById(`budget-${roundId}`);
+  if (box) box.innerHTML = budgetBarHTML(round.budget, s.cost);
+
+  renderGlobal();
+}
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+
+  if (action === 'add-video') {
+    const round = state.rounds.find(r => r.id === btn.dataset.round);
+    if (round) {
+      round.videos.push({ id: uid(), date: '', name: '', impressions: 0, views: 0, cost: 0, subs: 0, followon: 0 });
+      render();
+      scheduleSave();
+    }
+  } else if (action === 'del-video') {
+    const round = state.rounds.find(r => r.id === btn.dataset.round);
+    if (round) {
+      round.videos = round.videos.filter(v => v.id !== btn.dataset.video);
+      render();
+      scheduleSave();
+    }
+  } else if (action === 'del-round') {
+    if (confirm('删除这一轮的全部数据？此操作无法撤销。')) {
+      state.rounds = state.rounds.filter(r => r.id !== btn.dataset.round);
+      render();
+      scheduleSave();
+    }
+  } else if (action === 'toggle-end') {
+    const round = state.rounds.find(r => r.id === btn.dataset.round);
+    if (round) {
+      round.ended = !round.ended;
+      render();
+      scheduleSave();
+    }
+  }
+});
+
+document.getElementById('add-round-btn').addEventListener('click', () => {
+  const n = state.rounds.length + 1;
+  state.rounds.push({ id: uid(), name: '第 ' + n + ' 轮', dateRange: '', ended: false, videos: [] });
+  render();
+  scheduleSave();
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (confirm('清空全部数据？此操作无法撤销。')) {
+    state = { rounds: [] };
+    render();
+    scheduleSave();
+  }
+});
+
+async function init() {
+  try {
+    const result = await window.storage.get(STORAGE_KEY, false);
+    if (result && result.value) {
+      state = JSON.parse(result.value);
+    } else {
+      state = SEED;
+      await persist();
+    }
+  } catch (e) {
+    state = SEED;
+  }
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
