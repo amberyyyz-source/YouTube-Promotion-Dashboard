@@ -3,26 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <title>YouTube 推广数据看板</title>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
   const firebaseConfig = {
-    apiKey: "AIzaSyBFvGsJ0U-pFYI6THMETm7YfZNwNm8Ue-M",
-    authDomain: "geo-tool-58b2c.firebaseapp.com",
-    databaseURL: "https://geo-tool-58b2c-default-rtdb.firebaseio.com",
-    projectId: "geo-tool-58b2c",
-    storageBucket: "geo-tool-58b2c.firebasestorage.app",
-    messagingSenderId: "590964366005",
-    appId: "1:590964366005:web:13e2c9a81461d1db93bcfc"
+    apiKey: "AIzaSyByR9bIFZgUK7kf58mp6RW_p7ZksjdwVkg",
+    authDomain: "dashboard-a14c0.firebaseapp.com",
+    databaseURL: "https://dashboard-a14c0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "dashboard-a14c0",
+    storageBucket: "dashboard-a14c0.firebasestorage.app",
+    messagingSenderId: "522435742628",
+    appId: "1:522435742628:web:c3d7ea25dcf3428f08cf31"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+  firebase.initializeApp(firebaseConfig);
+  const fbDb = firebase.database();
 
-  window.fbSet = (path, data) => set(ref(db, path), data);
+  window.fbSet = (path, data) => fbDb.ref(path).set(data);
   window.fbGet = async (path) => {
-    const snap = await get(ref(db, path));
+    const snap = await fbDb.ref(path).get();
     return snap.exists() ? snap.val() : null;
   };
 </script>
@@ -465,6 +464,14 @@ function findVideo(roundId, videoId) {
 
 async function persist() {
   const statusEl = document.getElementById('save-status');
+  
+  // 安全检查：state 异常时拒绝保存，防止空数据覆盖
+  if (!state || !Array.isArray(state.rounds)) {
+    statusEl.textContent = '⚠️ 数据异常，已阻止保存';
+    console.error('阻止保存异常 state:', state);
+    return;
+  }
+  
   statusEl.textContent = '保存中…';
   try {
     await window.fbSet('geoData/dashboard', state);
