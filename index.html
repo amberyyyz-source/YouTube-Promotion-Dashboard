@@ -5,7 +5,6 @@
 <title>YouTube 推广数据看板</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyByR9bIFZgUK7kf58mp6RW_p7ZksjdwVkg",
@@ -25,7 +24,6 @@
     const snap = await fbDb.ref(path).get();
     return snap.exists() ? snap.val() : null;
   };
-  const fbAuth = firebase.auth();
 </script>
 <style>
   :root {
@@ -179,32 +177,6 @@
 </style>
 </head>
 <body>
-  <!-- 登录页面（默认隐藏，未登录时显示） -->
-<div id="login-screen" style="display:none; max-width: 400px; margin: 100px auto; padding: 32px; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;">
-  <h1 style="font-size: 20px; color: #1F2A44; margin: 0 0 8px;">YouTube 推广数据看板</h1>
-  <p style="color: #6B7280; font-size: 13px; margin: 0 0 24px;">请登录后查看</p>
-
-  <label style="display:block; font-size: 13px; color: #6B7280; margin-bottom: 6px;">邮箱</label>
-  <input id="login-email" type="email" placeholder="you@example.com"
-    style="width: 100%; padding: 10px 12px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 14px; margin-bottom: 16px; box-sizing: border-box;" />
-
-  <label style="display:block; font-size: 13px; color: #6B7280; margin-bottom: 6px;">密码</label>
-  <input id="login-password" type="password" placeholder="••••••••"
-    style="width: 100%; padding: 10px 12px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 14px; margin-bottom: 20px; box-sizing: border-box;" />
-
-  <button id="login-btn"
-    style="width: 100%; padding: 12px; background: #1F2A44; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
-    登录
-  </button>
-
-  <p id="login-error" style="color: #C0392B; font-size: 13px; margin-top: 12px; min-height: 18px;"></p>
-</div>
-
-<!-- 顶部登出条（登录后显示） -->
-<div id="user-bar" style="display:none; max-width: 1080px; margin: 0 auto 16px; text-align: right; font-size: 12px; color: #6B7280; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;">
-  <span id="user-email"></span>
-  <button id="logout-btn" style="margin-left: 12px; background: none; border: 1px solid #E5E7EB; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #6B7280; cursor: pointer;">退出登录</button>
-</div>
 <div class="wrap">
   <h1>YouTube 推广数据看板</h1>
   <p class="subtitle">手动录入每轮投放的原始数据，其余指标自动计算</p>
@@ -284,7 +256,6 @@ function sumVideos(videos) {
   return s;
 }
 
-// Dependency-free bar chart: renders label / track+fill / value rows inside a container.
 function renderBarChart(containerId, items, color, formatter) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -655,74 +626,7 @@ async function init() {
   render();
 }
 
-// ==================== 登录/登出逻辑 ====================
-const loginScreen = document.getElementById('login-screen');
-const userBar = document.getElementById('user-bar');
-const userEmailEl = document.getElementById('user-email');
-const loginEmailEl = document.getElementById('login-email');
-const loginPasswordEl = document.getElementById('login-password');
-const loginBtn = document.getElementById('login-btn');
-const loginErrorEl = document.getElementById('login-error');
-const logoutBtn = document.getElementById('logout-btn');
-
-// 登录按钮
-loginBtn.addEventListener('click', async () => {
-  const email = loginEmailEl.value.trim();
-  const password = loginPasswordEl.value;
-  loginErrorEl.textContent = '';
-  if (!email || !password) {
-    loginErrorEl.textContent = '请输入邮箱和密码';
-    return;
-  }
-  loginBtn.disabled = true;
-  loginBtn.textContent = '登录中…';
-  try {
-    await fbAuth.signInWithEmailAndPassword(email, password);
-    // 登录成功会触发 onAuthStateChanged
-  } catch (e) {
-    console.error(e);
-    if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
-      loginErrorEl.textContent = '邮箱或密码错误';
-    } else if (e.code === 'auth/user-not-found') {
-      loginErrorEl.textContent = '该邮箱未注册';
-    } else if (e.code === 'auth/too-many-requests') {
-      loginErrorEl.textContent = '尝试次数过多，请稍后再试';
-    } else {
-      loginErrorEl.textContent = '登录失败：' + e.message;
-    }
-  } finally {
-    loginBtn.disabled = false;
-    loginBtn.textContent = '登录';
-  }
-});
-
-// 回车登录
-loginPasswordEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') loginBtn.click();
-});
-
-// 登出
-logoutBtn.addEventListener('click', () => {
-  fbAuth.signOut();
-});
-
-// 监听登录状态
-fbAuth.onAuthStateChanged((user) => {
-  if (user) {
-    // 已登录 → 显示看板
-    loginScreen.style.display = 'none';
-    userBar.style.display = 'block';
-    userEmailEl.textContent = user.email || user.uid;
-    document.querySelector('.wrap').style.display = '';
-    // 加载数据
-    init();
-  } else {
-    // 未登录 → 显示登录页
-    loginScreen.style.display = 'block';
-    userBar.style.display = 'none';
-    document.querySelector('.wrap').style.display = 'none';
-  }
-});
-  </script>
+init();
+</script>
 </body>
 </html>
