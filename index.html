@@ -3,6 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <title>YouTube 推广数据看板</title>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFvGsJ0U-pFYI6THMETm7YfZNwNm8Ue-M",
+    authDomain: "geo-tool-58b2c.firebaseapp.com",
+    databaseURL: "https://geo-tool-58b2c-default-rtdb.firebaseio.com",
+    projectId: "geo-tool-58b2c",
+    storageBucket: "geo-tool-58b2c.firebasestorage.app",
+    messagingSenderId: "590964366005",
+    appId: "1:590964366005:web:13e2c9a81461d1db93bcfc"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window.fbSet = (path, data) => set(ref(db, path), data);
+  window.fbGet = async (path) => {
+    const snap = await get(ref(db, path));
+    return snap.exists() ? snap.val() : null;
+  };
+</script>
 <style>
   :root {
     --navy: #1F2A44;
@@ -172,7 +195,6 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'data';
 
 const SEED = {
   rounds: [
@@ -445,10 +467,10 @@ async function persist() {
   const statusEl = document.getElementById('save-status');
   statusEl.textContent = '保存中…';
   try {
-    const result = await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
-    if (!result) throw new Error('save failed');
+    await window.fbSet('geoData/dashboard', state);
     statusEl.textContent = '已保存 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false });
   } catch (e) {
+    console.error(e);
     statusEl.textContent = '保存失败，请重试';
   }
 }
@@ -584,14 +606,15 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 
 async function init() {
   try {
-    const result = await window.storage.get(STORAGE_KEY, false);
-    if (result && result.value) {
-      state = JSON.parse(result.value);
+    const data = await window.fbGet('geoData/dashboard');
+    if (data) {
+      state = data;
     } else {
       state = SEED;
       await persist();
     }
   } catch (e) {
+    console.error(e);
     state = SEED;
   }
   render();
